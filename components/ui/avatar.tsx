@@ -5,6 +5,12 @@ import * as AvatarPrimitive from "@radix-ui/react-avatar"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * Renders a Radix Avatar root element with default avatar sizing and shape, allowing additional class names.
+ *
+ * @param className - Additional CSS class names merged with the component's default avatar classes
+ * @returns The Avatar root JSX element
+ */
 function Avatar({
   className,
   ...props
@@ -21,6 +27,12 @@ function Avatar({
   )
 }
 
+/**
+ * Renders the avatar image element with default sizing and aspect ratio.
+ *
+ * @param className - Additional CSS classes to merge with the component's default image classes
+ * @returns The avatar image element with default `aspect-square` and `size-full` classes plus any merged `className`
+ */
 function AvatarImage({
   className,
   ...props
@@ -34,6 +46,12 @@ function AvatarImage({
   )
 }
 
+/**
+ * Renders a styled Radix Avatar.Fallback used when the avatar image is unavailable.
+ *
+ * @param className - Additional CSS classes merged with the component's default fallback styles
+ * @returns The rendered AvatarPrimitive.Fallback element with default fallback styling and any passed props
+ */
 function AvatarFallback({
   className,
   ...props
