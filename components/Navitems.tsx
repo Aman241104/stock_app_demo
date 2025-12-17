@@ -19,7 +19,7 @@ const Navitems = () => {
                 <li key={item.href}>
                     <Link href={item.href} className={`hover:text-yellow-500 transition-colors ${
                         isActive(item.href) ? 'text-gray-100' : ''
-                    }`}>{item.title}</Link>
+                    }`}>{item.label}</Link>
                 </li>
             ))}
         </ul>

@@ -5,9 +5,9 @@ import {headers} from "next/headers";
 import {redirect} from "next/navigation";
 
 const Layout = async ({ children }: { children : React.ReactNode }) => {
-    // const session = await auth.api.getSession({ headers: await headers() })
-    //
-    // if(session?.user) redirect('/')
+    const session = await auth.api.getSession({ headers: await headers() })
+
+    if(session?.user) redirect('/')
 
     return (
         <main className="auth-layout">
@@ -26,7 +26,7 @@ const Layout = async ({ children }: { children : React.ReactNode }) => {
                     </blockquote>
                     <div className="flex items-center justify-between">
                         <div>
-                            <cite className="auth-testimonial-author">- Andrew Tate.</cite>
+                            <cite className="auth-testimonial-author">- Ethan R.</cite>
                             <p className="max-md:text-xs text-gray-500">Retail Investor</p>
                         </div>
                         <div className="flex items-center gap-0.5">
