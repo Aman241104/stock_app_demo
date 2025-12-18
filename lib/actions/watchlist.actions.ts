@@ -1,159 +1,129 @@
-//@/lib/actions/watchlist.actions.ts
-
 'use server';
 
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
 import { auth } from '../better-auth/auth';
 import Watchlist from '@/database/models/watchlist.model';
 import { getStocksDetails } from '@/lib/actions/finnhub.actions';
 
-// -----------------------------
-// Helpers
-// -----------------------------
+/* --------------------------------------------------
+   Helpers (NO redirect here)
+-------------------------------------------------- */
 
-const getUserOrRedirect = async () => {
+const getUser = async () => {
     const session = await auth.api.getSession({
         headers: await headers(),
     });
 
-    if (!session?.user) redirect('/sign-in');
-    return session.user;
+    return session?.user ?? null;
 };
 
-const normalizeSymbol = (symbol: string) => symbol.trim().toUpperCase();
+const normalizeSymbol = (symbol: string) =>
+    symbol.trim().toUpperCase();
 
-// -----------------------------
-// Add stock to watchlist
-// -----------------------------
+/* --------------------------------------------------
+   Add stock to watchlist
+-------------------------------------------------- */
 
 export const addToWatchlist = async (symbol: string, company: string) => {
-    try {
-        const user = await getUserOrRedirect();
-        const normalizedSymbol = normalizeSymbol(symbol);
+    const user = await getUser();
+    if (!user) return { success: false, error: 'Unauthorized' };
 
-        const existingItem = await Watchlist.findOne({
-            userId: user.id,
-            symbol: normalizedSymbol,
-        });
+    const normalizedSymbol = normalizeSymbol(symbol);
 
-        if (existingItem) {
-            return { success: false, error: 'Stock already in watchlist' };
-        }
+    const exists = await Watchlist.findOne({
+        userId: user.id,
+        symbol: normalizedSymbol,
+    });
 
-        const newItem = new Watchlist({
-            userId: user.id,
-            symbol: normalizedSymbol,
-            company: company.trim(),
-        });
-
-        await newItem.save();
-        revalidatePath('/watchlist');
-
-        return { success: true, message: 'Stock added to watchlist' };
-    } catch (error) {
-        console.error('Error adding to watchlist:', error);
-        throw new Error('Failed to add stock to watchlist');
+    if (exists) {
+        return { success: false, error: 'Stock already in watchlist' };
     }
+
+    await Watchlist.create({
+        userId: user.id,
+        symbol: normalizedSymbol,
+        company: company.trim(),
+    });
+
+    revalidatePath('/watchlist');
+    return { success: true };
 };
 
-// -----------------------------
-// Remove stock from watchlist
-// -----------------------------
+/* --------------------------------------------------
+   Remove stock from watchlist
+-------------------------------------------------- */
 
 export const removeFromWatchlist = async (symbol: string) => {
-    try {
-        const user = await getUserOrRedirect();
-        const normalizedSymbol = normalizeSymbol(symbol);
+    const user = await getUser();
+    if (!user) return { success: false, error: 'Unauthorized' };
 
-        const result = await Watchlist.deleteOne({
-            userId: user.id,
-            symbol: normalizedSymbol,
-        });
+    const normalizedSymbol = normalizeSymbol(symbol);
 
-        if (result.deletedCount === 0) {
-            return { success: false, error: 'Stock not found in watchlist' };
-        }
+    await Watchlist.deleteOne({
+        userId: user.id,
+        symbol: normalizedSymbol,
+    });
 
-        revalidatePath('/watchlist');
-        return { success: true, message: 'Stock removed from watchlist' };
-    } catch (error) {
-        console.error('Error removing from watchlist:', error);
-        throw new Error('Failed to remove stock from watchlist');
-    }
+    revalidatePath('/watchlist');
+    return { success: true };
 };
 
-// -----------------------------
-// Get user's watchlist (raw)
-// -----------------------------
+/* --------------------------------------------------
+   Get user's watchlist (raw)
+-------------------------------------------------- */
 
 export const getUserWatchlist = async () => {
-    try {
-        const user = await getUserOrRedirect();
+    const user = await getUser();
+    if (!user) return null;
 
-        const watchlist = await Watchlist.find({ userId: user.id })
-            .sort({ addedAt: -1 })
-            .lean();
-
-        return watchlist;
-    } catch (error) {
-        console.error('Error fetching watchlist:', error);
-        throw new Error('Failed to fetch watchlist');
-    }
+    return Watchlist.find({ userId: user.id })
+        .sort({ addedAt: -1 })
+        .lean();
 };
 
-// -----------------------------
-// Get watchlist with live stock data
-// -----------------------------
+/* --------------------------------------------------
+   Get watchlist with live stock data
+-------------------------------------------------- */
 
 export const getWatchlistWithData = async () => {
-    try {
-        const user = await getUserOrRedirect();
+    const user = await getUser();
+    if (!user) return null;
 
-        const watchlist = await Watchlist.find({ userId: user.id })
-            .sort({ addedAt: -1 })
-            .lean();
+    const watchlist = await Watchlist.find({ userId: user.id })
+        .sort({ addedAt: -1 })
+        .lean();
 
-        if (watchlist.length === 0) return [];
+    if (watchlist.length === 0) return [];
 
-        const stocksWithData = await Promise.all(
-            watchlist.map(async (item) => {
-                const stockData = await getStocksDetails(item.symbol);
+    return Promise.all(
+        watchlist.map(async (item) => {
+            const stockData = await getStocksDetails(item.symbol);
 
-                return {
-                    company: stockData?.company ?? item.company,
-                    symbol: item.symbol,
-                    currentPrice: stockData?.currentPrice ?? null,
-                    priceFormatted: stockData?.priceFormatted ?? 'N/A',
-                    changeFormatted: stockData?.changeFormatted ?? 'N/A',
-                    changePercent: stockData?.changePercent ?? null,
-                    marketCap: stockData?.marketCapFormatted ?? 'N/A',
-                    peRatio: stockData?.peRatio ?? null,
-                };
-            })
-        );
-
-        return stocksWithData;
-    } catch (error) {
-        console.error('Error loading watchlist:', error);
-        throw new Error('Failed to fetch watchlist');
-    }
+            return {
+                symbol: item.symbol,
+                company: stockData?.company ?? item.company,
+                priceFormatted: stockData?.priceFormatted ?? '—',
+                changeFormatted: stockData?.changeFormatted ?? '—',
+                changePercent: stockData?.changePercent ?? null,
+                marketCap: stockData?.marketCapFormatted ?? '—',
+                peRatio: stockData?.peRatio ?? null,
+            };
+        })
+    );
 };
 
-// Get only symbols from user's watchlist (helper for search)
-export const getWatchlistSymbolsByEmail = async (
-    email: string
-): Promise<string[]> => {
-    try {
-        const watchlist = await Watchlist.find(
-            { email },
-            { symbol: 1, _id: 0 }
-        ).lean();
+/* --------------------------------------------------
+   Get only symbols from user's watchlist
+-------------------------------------------------- */
 
-        return watchlist.map((item) => item.symbol);
-    } catch (error) {
-        console.error('Error fetching watchlist symbols:', error);
-        return [];
-    }
+export const getWatchlistSymbolsByUserId = async (
+    userId: string
+): Promise<string[]> => {
+    const watchlist = await Watchlist.find(
+        { userId },
+        { symbol: 1, _id: 0 }
+    ).lean();
+
+    return watchlist.map((item) => item.symbol);
 };

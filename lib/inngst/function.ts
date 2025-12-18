@@ -2,7 +2,7 @@ import {inngest} from "@/lib/inngst/client";
 import {NEWS_SUMMARY_EMAIL_PROMPT, PERSONALIZED_WELCOME_EMAIL_PROMPT} from "@/lib/inngst/prompts";
 import {sendNewsSummaryEmail, sendWelcomeEmail} from "@/lib/nodemailer";
 import {getAllUsersForNewsEmail} from "@/lib/actions/user.action";
-import { getWatchlistSymbolsByEmail } from "@/lib/actions/watchlist.actions";
+import { getWatchlistSymbolsByEmail} from "@/lib/actions/finnhub.actions";
 import { getNews } from "@/lib/actions/finnhub.actions";
 import { getFormattedTodayDate } from "@/lib/utils";
 
