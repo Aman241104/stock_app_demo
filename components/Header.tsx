@@ -2,17 +2,24 @@ import Link from "next/link";
 import Image from "next/image";
 import Navitems from "@/components/Navitems";
 import UserDropdown from "@/components/UserDropdwn";
-import {searchStocks} from "@/lib/actions/finnhub.actions";
+import { searchStocksPublic } from "@/lib/actions/finnhub.actions";
 
 const Header = async ({ user }: { user: User }) => {
-    const initialStocks = await searchStocks();
+    const initialStocks = await searchStocksPublic();
 
     return (
         <header className="sticky top-0 header">
             <div className="container header-wrapper">
                 <Link href="/">
-                    <Image src="/assets/icons/logo.svg" alt="Signalist logo" width={140} height={32} className="h-8 w-auto cursor-pointer" />
+                    <Image
+                        src="/assets/icons/logo.svg"
+                        alt="Signalist logo"
+                        width={140}
+                        height={32}
+                        className="h-8 w-auto cursor-pointer"
+                    />
                 </Link>
+
                 <nav className="hidden sm:block">
                     <Navitems initialStocks={initialStocks} />
                 </nav>
@@ -20,6 +27,7 @@ const Header = async ({ user }: { user: User }) => {
                 <UserDropdown user={user} initialStocks={initialStocks} />
             </div>
         </header>
-    )
-}
-export default Header
+    );
+};
+
+export default Header;

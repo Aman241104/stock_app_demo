@@ -14,11 +14,15 @@ const WatchlistSchema = new Schema<WatchlistItem>(
         company: { type: String, required: true, trim: true },
         addedAt: { type: Date, default: Date.now },
     },
-    { timestamps: false }
+    {
+        timestamps: false,
+    }
 );
 
 // Prevent duplicate symbols per user
 WatchlistSchema.index({ userId: 1, symbol: 1 }, { unique: true });
 
-export const Watchlist: Model<WatchlistItem> =
-    (models?.Watchlist as Model<WatchlistItem>) || model<WatchlistItem>('Watchlist', WatchlistSchema);
+const Watchlist: Model<WatchlistItem> =
+    models.Watchlist || model<WatchlistItem>('Watchlist', WatchlistSchema);
+
+export default Watchlist;
